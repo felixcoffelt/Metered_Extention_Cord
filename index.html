@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metered Extension Cord</title>
+    <title>Current Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -78,19 +78,15 @@
             font-weight: bold;
             margin: 10px 0;
         }
-        .voltage-stat {
-            border-color: #3498db;
-            color: #3498db;
-        }
         .current-stat {
             border-color: #2ecc71;
             color: #2ecc71;
         }
-        .power-stat {
-            border-color: #e74c3c;
-            color: #e74c3c;
+        .raw-stat {
+            border-color: #3498db;
+            color: #3498db;
         }
-        .relay-stat {
+        .sequence-stat {
             border-color: #9b59b6;
             color: #9b59b6;
         }
@@ -181,41 +177,29 @@
 
     <div class="container">
         <div class="header">
-            <h1>Metered Extension Cord Monitor</h1>
-            <p>Real-time monitoring of voltage and current consumption</p>
+            <h1>Current Monitor</h1>
+            <p>Real-time monitoring of current consumption</p>
         </div>
 
         <div class="stats-container">
-            <div class="stat-box voltage-stat">
-                <div class="stat-title">Current Voltage</div>
-                <div id="currentVoltage" class="stat-value">0 V</div>
-                <div class="last-updated">Last updated: <span id="voltageTime">-</span></div>
-            </div>
             <div class="stat-box current-stat">
-                <div class="stat-title">Current Current</div>
+                <div class="stat-title">Current</div>
                 <div id="currentCurrent" class="stat-value">0 A</div>
                 <div class="last-updated">Last updated: <span id="currentTime">-</span></div>
             </div>
-            <div class="stat-box power-stat">
-                <div class="stat-title">Calculated Power</div>
-                <div id="currentPower" class="stat-value">0 W</div>
-                <div class="last-updated">Last updated: <span id="powerTime">-</span></div>
+            <div class="stat-box raw-stat">
+                <div class="stat-title">Raw Value</div>
+                <div id="currentRaw" class="stat-value">0</div>
+                <div class="last-updated">Last updated: <span id="rawTime">-</span></div>
             </div>
-            <div class="stat-box relay-stat">
-                <div class="stat-title">Relay State</div>
-                <div id="relayState" class="stat-value">UNKNOWN</div>
-                <div class="last-updated">Last updated: <span id="relayTime">-</span></div>
+            <div class="stat-box sequence-stat">
+                <div class="stat-title">Sequence Number</div>
+                <div id="sequenceNumber" class="stat-value">0</div>
+                <div class="last-updated">Last updated: <span id="sequenceTime">-</span></div>
             </div>
         </div>
 
         <div class="charts-row">
-            <div class="chart-wrapper">
-                <div class="chart-title">Voltage vs Data Point Number</div>
-                <div class="chart-container">
-                    <canvas id="voltageChart"></canvas>
-                </div>
-                <div class="data-points-info" id="voltageInfo">Displaying 0 data points</div>
-            </div>
             <div class="chart-wrapper">
                 <div class="chart-title">Current vs Data Point Number</div>
                 <div class="chart-container">
@@ -223,88 +207,32 @@
                 </div>
                 <div class="data-points-info" id="currentInfo">Displaying 0 data points</div>
             </div>
+            <div class="chart-wrapper">
+                <div class="chart-title">Current vs Time</div>
+                <div class="chart-container">
+                    <canvas id="timeChart"></canvas>
+                </div>
+                <div class="data-points-info" id="timeInfo">Displaying 0 data points</div>
+            </div>
         </div>
     </div>
 
     <script>
-       
         const firebaseConfig = {
-    databaseURL: ""
-	};
+            databaseURL: "https://database-c0bb0-default-rtdb.firebaseio.com"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let voltageChart, currentChart;
-        let voltageData = [];
+        let currentChart, timeChart;
         let currentData = [];
+        let timeData = [];
 
         // Initialize charts
         function initializeCharts() {
-            // Voltage chart
-            const voltageCtx = document.getElementById('voltageChart').getContext('2d');
-            voltageChart = new Chart(voltageCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Voltage (V)',
-                        data: [],
-                        borderColor: '#3498db',
-                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#3498db',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 1,
-                        pointRadius: 2,
-                        pointHoverRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { 
-                                display: true, 
-                                text: 'Voltage (V)',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        },
-                        x: {
-                            title: { 
-                                display: true, 
-                                text: 'Data Point Number',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 14 }
-                        }
-                    }
-                }
-            });
-
-            // Current chart
+            // Current chart (vs sequence number)
             const currentCtx = document.getElementById('currentChart').getContext('2d');
             currentChart = new Chart(currentCtx, {
                 type: 'line',
@@ -321,8 +249,8 @@
                         pointBackgroundColor: '#2ecc71',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1,
-                        pointRadius: 2,
-                        pointHoverRadius: 5
+                        pointRadius: 3,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -360,34 +288,103 @@
                         tooltip: {
                             backgroundColor: 'rgba(0,0,0,0.8)',
                             titleFont: { size: 14 },
-                            bodyFont: { size: 14 }
+                            bodyFont: { size: 14 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `Current: ${context.parsed.y.toFixed(3)} A`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Time chart (current vs time)
+            const timeCtx = document.getElementById('timeChart').getContext('2d');
+            timeChart = new Chart(timeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Current (A)',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#3498db',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { 
+                                display: true, 
+                                text: 'Current (A)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            title: { 
+                                display: true, 
+                                text: 'Time',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `Current: ${context.parsed.y.toFixed(3)} A`;
+                                }
+                            }
                         }
                     }
                 }
             });
         }
 
-        // Process data point to extract current_V and voltage_V
+        // Process data point to extract current data
         function processDataPoint(data) {
-            let voltage = 0;
             let current = 0;
-            let relayState = "UNKNOWN";
+            let currentRaw = 0;
             let timestamp = Date.now();
             let sequence = 0;
 
-            // Extract current_V and voltage_V from the data
-            if (data.current_V !== undefined && data.voltage_V !== undefined) {
-                voltage = data.voltage_V;
-                current = data.current_V;
-                relayState = data.relay_state || "UNKNOWN";
+            // Extract current_A from the data
+            if (data.current_A !== undefined) {
+                current = data.current_A;
+                currentRaw = data.current_raw || 0;
                 timestamp = data.timestamp_ms || timestamp;
                 sequence = data.sequence || 0;
             }
 
             return {
-                voltage: voltage,
                 current: current,
-                relayState: relayState,
+                currentRaw: currentRaw,
                 timestamp: timestamp,
                 sequence: sequence
             };
@@ -421,8 +418,8 @@
 
         // Process all existing data and update charts
         function processAllData(allData) {
-            voltageData = [];
             currentData = [];
+            timeData = [];
             
             const dataPoints = [];
             
@@ -430,8 +427,8 @@
             Object.keys(allData).forEach(key => {
                 const dataPoint = allData[key];
                 const processed = processDataPoint(dataPoint);
-                // Only include data points that have current_V and voltage_V
-                if (processed.voltage > 0 || processed.current > 0) {
+                // Only include data points that have current_A
+                if (processed.current !== undefined) {
                     dataPoints.push(processed);
                 }
             });
@@ -441,14 +438,15 @@
             
             // Store all data points
             dataPoints.forEach(point => {
-                voltageData.push({
-                    value: point.voltage,
-                    sequence: point.sequence
-                });
-                
                 currentData.push({
                     value: point.current,
                     sequence: point.sequence
+                });
+                
+                timeData.push({
+                    value: point.current,
+                    timestamp: point.timestamp,
+                    timeLabel: formatTime(point.timestamp)
                 });
             });
             
@@ -464,52 +462,56 @@
             updateInfoDisplays();
         }
 
+        // Format timestamp for display
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+        }
+
         // Update the charts with all data points
         function updateCharts() {
             // Create labels based on data point numbers (sequence numbers)
-            const labels = voltageData.map(point => `Point ${point.sequence}`);
-            
-            const voltageValues = voltageData.map(point => point.value);
+            const sequenceLabels = currentData.map(point => `Point ${point.sequence}`);
             const currentValues = currentData.map(point => point.value);
             
-            // Update voltage chart
-            voltageChart.data.labels = labels;
-            voltageChart.data.datasets[0].data = voltageValues;
-            voltageChart.update();
-            
-            // Update current chart
-            currentChart.data.labels = labels;
+            // Update current chart (vs sequence)
+            currentChart.data.labels = sequenceLabels;
             currentChart.data.datasets[0].data = currentValues;
             currentChart.update();
+            
+            // Update time chart
+            const timeLabels = timeData.map(point => point.timeLabel);
+            const timeValues = timeData.map(point => point.value);
+            
+            timeChart.data.labels = timeLabels;
+            timeChart.data.datasets[0].data = timeValues;
+            timeChart.update();
         }
 
         // Update statistics display
         function updateStats(data) {
-            const voltage = data.voltage || 0;
             const current = data.current || 0;
-            const power = voltage * current;
-            const relayState = data.relayState || "UNKNOWN";
+            const currentRaw = data.currentRaw || 0;
+            const sequence = data.sequence || 0;
             
-            document.getElementById('currentVoltage').textContent = voltage.toFixed(3) + ' V';
             document.getElementById('currentCurrent').textContent = current.toFixed(3) + ' A';
-            document.getElementById('currentPower').textContent = power.toFixed(3) + ' W';
-            document.getElementById('relayState').textContent = relayState;
+            document.getElementById('currentRaw').textContent = currentRaw;
+            document.getElementById('sequenceNumber').textContent = sequence;
             
             const now = new Date();
             const timeString = now.toLocaleTimeString();
             
-            document.getElementById('voltageTime').textContent = timeString;
             document.getElementById('currentTime').textContent = timeString;
-            document.getElementById('powerTime').textContent = timeString;
-            document.getElementById('relayTime').textContent = timeString;
+            document.getElementById('rawTime').textContent = timeString;
+            document.getElementById('sequenceTime').textContent = timeString;
         }
 
         // Update info displays
         function updateInfoDisplays() {
-            document.getElementById('voltageInfo').textContent = 
-                `Displaying ${voltageData.length} voltage data points`;
             document.getElementById('currentInfo').textContent = 
                 `Displaying ${currentData.length} current data points`;
+            document.getElementById('timeInfo').textContent = 
+                `Displaying ${timeData.length} time data points`;
         }
 
         // Initialize everything when page loads
