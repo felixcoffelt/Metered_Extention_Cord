@@ -187,11 +187,14 @@
                 <div id="currentCurrent" class="stat-value">0 A</div>
                 <div class="last-updated">Last updated: <span id="currentTime">-</span></div>
             </div>
+
+            <!-- CHANGED: Raw -> Energy (kWh) -->
             <div class="stat-box raw-stat">
-                <div class="stat-title">Raw Value</div>
-                <div id="currentRaw" class="stat-value">0</div>
-                <div class="last-updated">Last updated: <span id="rawTime">-</span></div>
+                <div class="stat-title">Energy (kWh)</div>
+                <div id="energyKWh" class="stat-value">0 kWh</div>
+                <div class="last-updated">Last updated: <span id="energyTime">-</span></div>
             </div>
+
             <div class="stat-box sequence-stat">
                 <div class="stat-title">Sequence Number</div>
                 <div id="sequenceNumber" class="stat-value">0</div>
@@ -367,24 +370,23 @@
             });
         }
 
-        // Process data point to extract current data
+        // Process data point to extract current + energy
         function processDataPoint(data) {
             let current = 0;
-            let currentRaw = 0;
+            let energyKWh = 0;
             let timestamp = Date.now();
             let sequence = 0;
 
-            // Extract current_A from the data
             if (data.current_A !== undefined) {
                 current = data.current_A;
-                currentRaw = data.current_raw || 0;
+                energyKWh = data.energy_kWh || 0;   // <--- read energy from DB
                 timestamp = data.timestamp_ms || timestamp;
                 sequence = data.sequence || 0;
             }
 
             return {
                 current: current,
-                currentRaw: currentRaw,
+                energyKWh: energyKWh,
                 timestamp: timestamp,
                 sequence: sequence
             };
@@ -394,7 +396,6 @@
         function startRealtimeListener() {
             const sensorDataRef = database.ref('sensorData');
             
-            // Listen for all data changes
             sensorDataRef.on('value', (snapshot) => {
                 const allData = snapshot.val();
                 if (allData) {
@@ -423,11 +424,9 @@
             
             const dataPoints = [];
             
-            // Convert object to array and process each data point
             Object.keys(allData).forEach(key => {
                 const dataPoint = allData[key];
                 const processed = processDataPoint(dataPoint);
-                // Only include data points that have current_A
                 if (processed.current !== undefined) {
                     dataPoints.push(processed);
                 }
@@ -436,7 +435,6 @@
             // Sort by sequence number to maintain chronological order
             dataPoints.sort((a, b) => a.sequence - b.sequence);
             
-            // Store all data points
             dataPoints.forEach(point => {
                 currentData.push({
                     value: point.current,
@@ -450,15 +448,12 @@
                 });
             });
             
-            // Update charts with all data points
             updateCharts();
             
-            // Update stats with the latest point
             if (dataPoints.length > 0) {
                 updateStats(dataPoints[dataPoints.length - 1]);
             }
             
-            // Update info displays
             updateInfoDisplays();
         }
 
@@ -470,16 +465,13 @@
 
         // Update the charts with all data points
         function updateCharts() {
-            // Create labels based on data point numbers (sequence numbers)
             const sequenceLabels = currentData.map(point => `Point ${point.sequence}`);
             const currentValues = currentData.map(point => point.value);
             
-            // Update current chart (vs sequence)
             currentChart.data.labels = sequenceLabels;
             currentChart.data.datasets[0].data = currentValues;
             currentChart.update();
             
-            // Update time chart
             const timeLabels = timeData.map(point => point.timeLabel);
             const timeValues = timeData.map(point => point.value);
             
@@ -491,18 +483,18 @@
         // Update statistics display
         function updateStats(data) {
             const current = data.current || 0;
-            const currentRaw = data.currentRaw || 0;
+            const energyKWh = data.energyKWh || 0;
             const sequence = data.sequence || 0;
             
             document.getElementById('currentCurrent').textContent = current.toFixed(3) + ' A';
-            document.getElementById('currentRaw').textContent = currentRaw;
+            document.getElementById('energyKWh').textContent = energyKWh.toFixed(4) + ' kWh';
             document.getElementById('sequenceNumber').textContent = sequence;
             
             const now = new Date();
             const timeString = now.toLocaleTimeString();
             
             document.getElementById('currentTime').textContent = timeString;
-            document.getElementById('rawTime').textContent = timeString;
+            document.getElementById('energyTime').textContent = timeString;
             document.getElementById('sequenceTime').textContent = timeString;
         }
 
