@@ -53,13 +53,14 @@
             justify-content: space-between;
             margin-bottom: 30px;
             gap: 20px;
+            flex-wrap: wrap;
         }
         .stat-box {
             background: white;
             padding: 20px;
             border-radius: 10px;
             text-align: center;
-            flex: 1;
+            flex: 1 1 230px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.08);
             border-top: 4px solid;
             transition: transform 0.3s ease;
@@ -89,6 +90,10 @@
         .sequence-stat {
             border-color: #9b59b6;
             color: #9b59b6;
+        }
+        .relay-stat {
+            border-color: #e67e22;
+            color: #e67e22;
         }
         .connection-status {
             position: fixed;
@@ -146,9 +151,10 @@
         .charts-row {
             display: flex;
             gap: 20px;
+            flex-wrap: wrap;
         }
         .chart-wrapper {
-            flex: 1;
+            flex: 1 1 350px;
             display: flex;
             flex-direction: column;
         }
@@ -159,10 +165,28 @@
             color: #2c3e50;
             font-size: 1.1rem;
         }
+        .relay-button {
+            margin-top: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .relay-button:active {
+            transform: scale(0.97);
+        }
+        .relay-on-btn {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+        .relay-off-btn {
+            background-color: #2ecc71;
+            color: #fff;
+        }
         @media (max-width: 768px) {
-            .stats-container, .charts-row {
-                flex-direction: column;
-            }
             .chart-container {
                 height: 300px;
             }
@@ -178,7 +202,7 @@
     <div class="container">
         <div class="header">
             <h1>Current Monitor</h1>
-            <p>Real-time monitoring of current consumption</p>
+            <p>Real-time monitoring of current and energy consumption</p>
         </div>
 
         <div class="stats-container">
@@ -187,15 +211,27 @@
                 <div id="currentCurrent" class="stat-value">0 A</div>
                 <div class="last-updated">Last updated: <span id="currentTime">-</span></div>
             </div>
+
             <div class="stat-box raw-stat">
                 <div class="stat-title">Energy (kWh)</div>
                 <div id="energyKWh" class="stat-value">0 kWh</div>
                 <div class="last-updated">Last updated: <span id="energyTime">-</span></div>
             </div>
+
             <div class="stat-box sequence-stat">
                 <div class="stat-title">Sequence Number</div>
                 <div id="sequenceNumber" class="stat-value">0</div>
                 <div class="last-updated">Last updated: <span id="sequenceTime">-</span></div>
+            </div>
+
+            <!-- NEW: Relay card -->
+            <div class="stat-box relay-stat">
+                <div class="stat-title">Relay</div>
+                <div id="relayStatus" class="stat-value">Unknown</div>
+                <button id="relayToggle" class="relay-button relay-off-btn">
+                    Turn ON
+                </button>
+                <div class="last-updated">Last updated: <span id="relayTime">-</span></div>
             </div>
         </div>
 
@@ -216,7 +252,6 @@
             </div>
         </div>
 
-        <!-- NEW: Energy (kWh) vs Time chart -->
         <div class="charts-row">
             <div class="chart-wrapper">
                 <div class="chart-title">Energy (kWh) vs Time</div>
@@ -241,6 +276,9 @@
         let currentData = [];
         let timeData = [];
         let energyData = [];
+
+        let relayRef;          // Firebase ref for relay
+        let lastRelayState = null; // boolean: true = ON, false = OFF
 
         // Initialize charts
         function initializeCharts() {
@@ -378,7 +416,7 @@
                 }
             });
 
-            // NEW: Energy chart (kWh vs time)
+            // Energy chart (kWh vs time)
             const energyCtx = document.getElementById('energyChart').getContext('2d');
             energyChart = new Chart(energyCtx, {
                 type: 'line',
@@ -468,7 +506,7 @@
             };
         }
 
-        // Listen for real-time updates
+        // Listen for real-time updates (sensor + relay + connection)
         function startRealtimeListener() {
             const sensorDataRef = database.ref('sensorData');
             
@@ -477,6 +515,15 @@
                 if (allData) {
                     processAllData(allData);
                 }
+            });
+
+            // Relay reference
+            relayRef = database.ref('relay/state');
+
+            // Listen to relay state changes
+            relayRef.on('value', (snap) => {
+                const state = snap.val();
+                updateRelayUI(state);
             });
 
             // Monitor connection status
@@ -491,6 +538,34 @@
                     statusElement.innerHTML = '<span class="status-indicator"></span><span>Disconnected</span>';
                 }
             });
+        }
+
+        // Update relay UI from state
+        function updateRelayUI(state) {
+            const relayStatusEl = document.getElementById('relayStatus');
+            const relayButton = document.getElementById('relayToggle');
+            const relayTimeEl = document.getElementById('relayTime');
+
+            if (!relayStatusEl || !relayButton || !relayTimeEl) return;
+
+            // Interpret state as boolean
+            const isOn = (state === true || state === 'on' || state === 'ON' || state === 1);
+
+            lastRelayState = isOn;
+
+            relayStatusEl.textContent = isOn ? 'ON' : 'OFF';
+
+            if (isOn) {
+                relayButton.textContent = 'Turn OFF';
+                relayButton.classList.remove('relay-off-btn');
+                relayButton.classList.add('relay-on-btn');
+            } else {
+                relayButton.textContent = 'Turn ON';
+                relayButton.classList.remove('relay-on-btn');
+                relayButton.classList.add('relay-off-btn');
+            }
+
+            relayTimeEl.textContent = new Date().toLocaleTimeString();
         }
 
         // Process all existing data and update charts
@@ -606,6 +681,18 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeCharts();
             startRealtimeListener();
+
+            // Button click to toggle relay
+            const relayButton = document.getElementById('relayToggle');
+            if (relayButton) {
+                relayButton.addEventListener('click', function() {
+                    // Default to OFF if we don't know current state
+                    const newState = !(lastRelayState === true);
+                    if (relayRef) {
+                        relayRef.set(newState);
+                    }
+                });
+            }
         });
     </script>
 </body>
