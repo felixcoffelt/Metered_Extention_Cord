@@ -16,9 +16,9 @@ const float MAINS_VOLTAGE = 120.0f;            // assume 120 V always
 float       energy_Wh_total = 0.0f;            // accumulated Wh since boot
 
 // ========= Wi-Fi =========
-// TODO: PUT YOUR OWN WIFI CREDENTIALS HERE
-const char *ssid     = "";
-const char *password = "";
+// CHANGE THESE TO YOUR OWN WIFI
+const char *ssid     = "YOUR_WIFI_SSID";
+const char *password = "YOUR_WIFI_PASSWORD";
 
 // ========= Firebase Realtime Database (REST) =========
 const char* FIREBASE_HOST = "database-c0bb0-default-rtdb.firebaseio.com";
@@ -30,7 +30,7 @@ WiFiServer server(80);
 // ========= Globals =========
 unsigned long lastFirebaseUpdate = 0;
 const unsigned long FIREBASE_UPDATE_INTERVAL = 10000; // 10s
-int  dataCount  = 0;
+int  dataCount  = 0;  // committed sequence number
 
 // --- accumulation over each Firebase interval ---
 float    current_sum   = 0.0f;    // sum of samples
@@ -94,22 +94,23 @@ void sendToFirebase(float currentA, float energy_kWh) {
   WiFiClientSecure sslClient;
   sslClient.setInsecure();   // no certificate validation
 
-  dataCount++;
+  // --- Use a candidate sequence; only commit it on success ---
+  int candidateSeq = dataCount + 1;
 
   FirebaseJson dataPoint;
   dataPoint.add("timestamp_ms", (int64_t)millis());
-  dataPoint.add("current_A",    currentA);    // RMS current over interval
-  dataPoint.add("energy_kWh",   energy_kWh);  // total energy so far
-  dataPoint.add("sequence",     dataCount);
+  dataPoint.add("current_A",    currentA);       // RMS current over interval
+  dataPoint.add("energy_kWh",   energy_kWh);     // total energy so far
+  dataPoint.add("sequence",     candidateSeq);   // candidate sequence
 
   // Serial debug
   Serial.println("---------------------------------------------------");
-  Serial.print("Data point #"); Serial.println(dataCount);
+  Serial.print("Preparing data point candidate #"); Serial.println(candidateSeq);
   Serial.print("Current (A) [RMS]: ");  Serial.println(currentA, 4);
   Serial.print("Energy (kWh): ");       Serial.println(energy_kWh, 6);
   Serial.println("---------------------------------------------------");
 
-  String url = "/sensorData/dataPoint_" + String(dataCount) + ".json?auth=" + String(FIREBASE_AUTH);
+  String url = "/sensorData/dataPoint_" + String(candidateSeq) + ".json?auth=" + String(FIREBASE_AUTH);
 
   Serial.print("Connecting to Firebase host: ");
   Serial.println(FIREBASE_HOST);
@@ -156,8 +157,21 @@ void sendToFirebase(float currentA, float energy_kWh) {
 
   sslClient.stop();
 
+  responseStatus.trim();
   Serial.print("Firebase upload attempted, status line: ");
   Serial.println(responseStatus);
+
+  // ---- Commit sequence ONLY if HTTP 2xx ----
+  if (gotStatus &&
+      (responseStatus.startsWith("HTTP/1.1 200") ||
+       responseStatus.startsWith("HTTP/1.1 2"))) {
+    dataCount = candidateSeq;
+    Serial.print("Upload OK, sequence committed: ");
+    Serial.println(dataCount);
+  } else {
+    Serial.println("Upload failed or unknown status; sequence NOT incremented.");
+  }
+
   Serial.println("---------------------------\n");
 }
 
@@ -174,7 +188,7 @@ void handleWebClient(float currentA) {
     if (client.available()) {
       char c = client.read();
       req += c;
-      if (c == '\n' && firstLine.length() == 0) {   // FIX: was firstLine.isEmpty()
+      if (c == '\n' && firstLine.length() == 0) {   // FIX from isEmpty()
         int end = req.indexOf("\r\n");
         if (end > 0) firstLine = req.substring(0, end);
       }
@@ -302,16 +316,3 @@ void loop() {
 
   delay(500);  // sampling period for Serial & accumulation
 }
-
-/*
-// Over-current + relay handling removed:
-
-  if (iMv > OC_MV_THRESHOLD) {
-    if (oc_start_ms == 0) oc_start_ms = millis();
-    if (!oc_latched && (millis() - oc_start_ms >= OC_HOLD_MS)) {
-      oc_latched = true;
-      relayWrite(false);
-      Serial.println("!! Over-current latched, relay OFF !!");
-    }
-  } else oc_start_ms = 0;
-*/
