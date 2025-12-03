@@ -187,14 +187,11 @@
                 <div id="currentCurrent" class="stat-value">0 A</div>
                 <div class="last-updated">Last updated: <span id="currentTime">-</span></div>
             </div>
-
-            <!-- CHANGED: Raw -> Energy (kWh) -->
             <div class="stat-box raw-stat">
                 <div class="stat-title">Energy (kWh)</div>
                 <div id="energyKWh" class="stat-value">0 kWh</div>
                 <div class="last-updated">Last updated: <span id="energyTime">-</span></div>
             </div>
-
             <div class="stat-box sequence-stat">
                 <div class="stat-title">Sequence Number</div>
                 <div id="sequenceNumber" class="stat-value">0</div>
@@ -218,6 +215,17 @@
                 <div class="data-points-info" id="timeInfo">Displaying 0 data points</div>
             </div>
         </div>
+
+        <!-- NEW: Energy (kWh) vs Time chart -->
+        <div class="charts-row">
+            <div class="chart-wrapper">
+                <div class="chart-title">Energy (kWh) vs Time</div>
+                <div class="chart-container">
+                    <canvas id="energyChart"></canvas>
+                </div>
+                <div class="data-points-info" id="energyInfo">Displaying 0 energy data points</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -229,9 +237,10 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let currentChart, timeChart;
+        let currentChart, timeChart, energyChart;
         let currentData = [];
         let timeData = [];
+        let energyData = [];
 
         // Initialize charts
         function initializeCharts() {
@@ -368,6 +377,73 @@
                     }
                 }
             });
+
+            // NEW: Energy chart (kWh vs time)
+            const energyCtx = document.getElementById('energyChart').getContext('2d');
+            energyChart = new Chart(energyCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Energy (kWh)',
+                        data: [],
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#9b59b6',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { 
+                                display: true, 
+                                text: 'Energy (kWh)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            title: { 
+                                display: true, 
+                                text: 'Time',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `Energy: ${context.parsed.y.toFixed(4)} kWh`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Process data point to extract current + energy
@@ -379,7 +455,7 @@
 
             if (data.current_A !== undefined) {
                 current = data.current_A;
-                energyKWh = data.energy_kWh || 0;   // <--- read energy from DB
+                energyKWh = data.energy_kWh || 0;
                 timestamp = data.timestamp_ms || timestamp;
                 sequence = data.sequence || 0;
             }
@@ -421,6 +497,7 @@
         function processAllData(allData) {
             currentData = [];
             timeData = [];
+            energyData = [];
             
             const dataPoints = [];
             
@@ -432,7 +509,7 @@
                 }
             });
             
-            // Sort by sequence number to maintain chronological order
+            // Sort by sequence number
             dataPoints.sort((a, b) => a.sequence - b.sequence);
             
             dataPoints.forEach(point => {
@@ -441,10 +518,17 @@
                     sequence: point.sequence
                 });
                 
+                const timeLabel = formatTime(point.timestamp);
                 timeData.push({
                     value: point.current,
                     timestamp: point.timestamp,
-                    timeLabel: formatTime(point.timestamp)
+                    timeLabel: timeLabel
+                });
+
+                energyData.push({
+                    value: point.energyKWh,
+                    timestamp: point.timestamp,
+                    timeLabel: timeLabel
                 });
             });
             
@@ -465,6 +549,7 @@
 
         // Update the charts with all data points
         function updateCharts() {
+            // Current vs sequence
             const sequenceLabels = currentData.map(point => `Point ${point.sequence}`);
             const currentValues = currentData.map(point => point.value);
             
@@ -472,12 +557,21 @@
             currentChart.data.datasets[0].data = currentValues;
             currentChart.update();
             
+            // Current vs time
             const timeLabels = timeData.map(point => point.timeLabel);
             const timeValues = timeData.map(point => point.value);
             
             timeChart.data.labels = timeLabels;
             timeChart.data.datasets[0].data = timeValues;
             timeChart.update();
+
+            // Energy vs time
+            const energyLabels = energyData.map(point => point.timeLabel);
+            const energyValues = energyData.map(point => point.value);
+
+            energyChart.data.labels = energyLabels;
+            energyChart.data.datasets[0].data = energyValues;
+            energyChart.update();
         }
 
         // Update statistics display
@@ -504,6 +598,8 @@
                 `Displaying ${currentData.length} current data points`;
             document.getElementById('timeInfo').textContent = 
                 `Displaying ${timeData.length} time data points`;
+            document.getElementById('energyInfo').textContent = 
+                `Displaying ${energyData.length} energy data points`;
         }
 
         // Initialize everything when page loads
