@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Current Monitor</title>
+    <title>Metered Power Outlet</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -14,6 +14,7 @@
             padding: 20px;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            color: #2c3e50;
         }
         .container {
             max-width: 1200px;
@@ -38,12 +39,13 @@
             color: #7f8c8d;
             font-size: 1.1rem;
         }
+
         .chart-container {
             position: relative;
-            height: 400px;
-            margin-bottom: 30px;
+            height: 430px;
+            margin-bottom: 10px;
             background: #fafafa;
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             border: 1px solid #e0e0e0;
@@ -51,7 +53,7 @@
         .stats-container {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             gap: 20px;
             flex-wrap: wrap;
         }
@@ -95,6 +97,7 @@
             border-color: #e67e22;
             color: #e67e22;
         }
+
         .connection-status {
             position: fixed;
             top: 20px;
@@ -106,24 +109,15 @@
             z-index: 100;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        .connected {
+            gap: 10px;
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-        .disconnected {
+        .connection-status.disconnected {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
-        }
-        .data-points-info {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-            color: #7f8c8d;
-            font-style: italic;
         }
         .status-indicator {
             width: 10px;
@@ -143,28 +137,39 @@
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
+
+        .data-points-info {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
         .last-updated {
             font-size: 12px;
             color: #95a5a6;
             margin-top: 8px;
         }
+
+        /* Charts stacked as large horizontal rows */
         .charts-row {
             display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 25px;
         }
         .chart-wrapper {
-            flex: 1 1 350px;
+            width: 100%;
             display: flex;
             flex-direction: column;
         }
         .chart-title {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 600;
             color: #2c3e50;
             font-size: 1.1rem;
         }
+
         .relay-button {
             margin-top: 8px;
             padding: 8px 16px;
@@ -186,9 +191,163 @@
             background-color: #2ecc71;
             color: #fff;
         }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .controls-row label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .controls-row input {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #bdc3c7;
+            font-size: 14px;
+            max-width: 140px;
+        }
+        .controls-row .units {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background: #121212  !important; 
+    	    color: #121212;
+        }
+        body.dark-mode .container {
+            background: #181818;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        body.dark-mode .header h1 {
+            color: #ecf0f1;
+        }
+        body.dark-mode .header p {
+            color: #bdc3c7;
+        }
+        body.dark-mode .stat-box {
+            background: #2f3640;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.7);
+        }
+        body.dark-mode .stat-title {
+            color: #bdc3c7;
+        }
+        body.dark-mode .stat-value {
+            color: #ecf0f1;
+        }
+        body.dark-mode .chart-container {
+            background: #2f3640;
+            border-color: #4b4b4b;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.7);
+        }
+        body.dark-mode .chart-title {
+            color: #ecf0f1;
+        }
+        body.dark-mode .last-updated,
+        body.dark-mode .data-points-info,
+        body.dark-mode .controls-row label,
+        body.dark-mode .controls-row .units {
+            color: #bdc3c7;
+        }
+        body.dark-mode .controls-row input {
+            background: #2f3640;
+            color: #ecf0f1;
+            border-color: #636e72;
+        }
+        body.dark-mode .connection-status {
+            background: #145a32;
+            color: #d4efdf;
+            border-color: #27ae60;
+        }
+        body.dark-mode .connection-status.disconnected {
+            background: #7b241c;
+            color: #f5b7b1;
+            border-color: #e74c3c;
+        }
+        body.dark-mode .theme-switch-box {
+            background: #1e272e;
+            color: #ecf0f1;
+            border-color: #4b4b4b;
+        }
+
+        /* Dark mode switch box (separate from connection bubble) */
+        .theme-switch-box {
+            position: fixed;
+            top: 64px; /* just below connection status */
+            right: 20px;
+            padding: 6px 10px;
+            border-radius: 16px;
+            border: 1px solid #c3c6cb;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 99;
+        }
+        .theme-switch-box span {
+            white-space: nowrap;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #34495e;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
         @media (max-width: 768px) {
             .chart-container {
-                height: 300px;
+                height: 320px;
+            }
+            .connection-status {
+                flex-wrap: wrap;
+                right: 10px;
+                left: 10px;
+                justify-content: space-between;
+            }
+            .theme-switch-box {
+                top: 80px;
+                right: 10px;
             }
         }
     </style>
@@ -196,13 +355,20 @@
 <body>
     <div id="connectionStatus" class="connection-status connected">
         <span class="status-indicator"></span>
-        <span>Live Connected</span>
+        <span id="connectionText">Live Connected</span>
+    </div>
+
+    <div class="theme-switch-box">
+        <span>Dark Mode</span>
+        <label class="switch">
+            <input type="checkbox" id="themeToggleSwitch">
+            <span class="slider"></span>
+        </label>
     </div>
 
     <div class="container">
         <div class="header">
-            <h1>Current Monitor</h1>
-            <p>Real-time monitoring of current and energy consumption</p>
+            <h1>Metered Power Outlet</h1>
         </div>
 
         <div class="stats-container">
@@ -224,7 +390,6 @@
                 <div class="last-updated">Last updated: <span id="sequenceTime">-</span></div>
             </div>
 
-            <!-- NEW: Relay card -->
             <div class="stat-box relay-stat">
                 <div class="stat-title">Relay</div>
                 <div id="relayStatus" class="stat-value">Unknown</div>
@@ -235,14 +400,13 @@
             </div>
         </div>
 
+        <div class="controls-row">
+            <label for="costPerKWhInput">Cost per kWh:</label>
+            <input type="number" id="costPerKWhInput" min="0" step="0.001" value="0.30">
+            <span class="units">$ / kWh</span>
+        </div>
+
         <div class="charts-row">
-            <div class="chart-wrapper">
-                <div class="chart-title">Current vs Data Point Number</div>
-                <div class="chart-container">
-                    <canvas id="currentChart"></canvas>
-                </div>
-                <div class="data-points-info" id="currentInfo">Displaying 0 data points</div>
-            </div>
             <div class="chart-wrapper">
                 <div class="chart-title">Current vs Time</div>
                 <div class="chart-container">
@@ -250,15 +414,21 @@
                 </div>
                 <div class="data-points-info" id="timeInfo">Displaying 0 data points</div>
             </div>
-        </div>
 
-        <div class="charts-row">
             <div class="chart-wrapper">
                 <div class="chart-title">Energy (kWh) vs Time</div>
                 <div class="chart-container">
                     <canvas id="energyChart"></canvas>
                 </div>
                 <div class="data-points-info" id="energyInfo">Displaying 0 energy data points</div>
+            </div>
+
+            <div class="chart-wrapper">
+                <div class="chart-title">Cost vs Time</div>
+                <div class="chart-container">
+                    <canvas id="costChart"></canvas>
+                </div>
+                <div class="data-points-info" id="costInfo">Displaying 0 cost data points</div>
             </div>
         </div>
     </div>
@@ -272,84 +442,16 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let currentChart, timeChart, energyChart;
-        let currentData = [];
+        let timeChart, energyChart, costChart;
         let timeData = [];
         let energyData = [];
+        let costPerKWh = 0.30;
 
-        let relayRef;          // Firebase ref for relay
-        let lastRelayState = null; // boolean: true = ON, false = OFF
+        let relayRef;
+        let lastRelayState = null;
+        let isDarkMode = false;
 
-        // Initialize charts
         function initializeCharts() {
-            // Current chart (vs sequence number)
-            const currentCtx = document.getElementById('currentChart').getContext('2d');
-            currentChart = new Chart(currentCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Current (A)',
-                        data: [],
-                        borderColor: '#2ecc71',
-                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#2ecc71',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 1,
-                        pointRadius: 3,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { 
-                                display: true, 
-                                text: 'Current (A)',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        },
-                        x: {
-                            title: { 
-                                display: true, 
-                                text: 'Data Point Number',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 14 },
-                            callbacks: {
-                                label: function(context) {
-                                    return `Current: ${context.parsed.y.toFixed(3)} A`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Time chart (current vs time)
             const timeCtx = document.getElementById('timeChart').getContext('2d');
             timeChart = new Chart(timeCtx, {
                 type: 'line',
@@ -362,7 +464,7 @@
                         backgroundColor: 'rgba(52, 152, 219, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4,
+                        tension: 0,  // straight lines
                         pointBackgroundColor: '#3498db',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1,
@@ -376,47 +478,30 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { 
-                                display: true, 
-                                text: 'Current (A)',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
+                            title: { display: true, text: 'Current (A)', font: { size: 14, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#2c3e50' }
                         },
                         x: {
-                            title: { 
-                                display: true, 
-                                text: 'Time',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
+                            title: { display: true, text: 'Time', font: { size: 14, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#2c3e50' }
                         }
                     },
                     plugins: {
-                        legend: {
-                            labels: {
-                                font: { size: 14 }
-                            }
-                        },
+                        legend: { labels: { font: { size: 14 }, color: '#2c3e50' } },
                         tooltip: {
                             backgroundColor: 'rgba(0,0,0,0.8)',
                             titleFont: { size: 14 },
                             bodyFont: { size: 14 },
                             callbacks: {
-                                label: function(context) {
-                                    return `Current: ${context.parsed.y.toFixed(3)} A`;
-                                }
+                                label: ctx => `Current: ${ctx.parsed.y.toFixed(3)} A`
                             }
                         }
                     }
                 }
             });
 
-            // Energy chart (kWh vs time)
             const energyCtx = document.getElementById('energyChart').getContext('2d');
             energyChart = new Chart(energyCtx, {
                 type: 'line',
@@ -429,7 +514,7 @@
                         backgroundColor: 'rgba(155, 89, 182, 0.1)',
                         borderWidth: 2,
                         fill: true,
-                        tension: 0.4,
+                        tension: 0,  // straight
                         pointBackgroundColor: '#9b59b6',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1,
@@ -443,40 +528,74 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { 
-                                display: true, 
-                                text: 'Energy (kWh)',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
+                            title: { display: true, text: 'Energy (kWh)', font: { size: 14, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#2c3e50' }
                         },
                         x: {
-                            title: { 
-                                display: true, 
-                                text: 'Time',
-                                font: { size: 14, weight: 'bold' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
+                            title: { display: true, text: 'Time', font: { size: 14, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#2c3e50' }
                         }
                     },
                     plugins: {
-                        legend: {
-                            labels: {
-                                font: { size: 14 }
-                            }
-                        },
+                        legend: { labels: { font: { size: 14 }, color: '#2c3e50' } },
                         tooltip: {
                             backgroundColor: 'rgba(0,0,0,0.8)',
                             titleFont: { size: 14 },
                             bodyFont: { size: 14 },
                             callbacks: {
-                                label: function(context) {
-                                    return `Energy: ${context.parsed.y.toFixed(4)} kWh`;
-                                }
+                                label: ctx => `Energy: ${ctx.parsed.y.toFixed(4)} kWh`
+                            }
+                        }
+                    }
+                }
+            });
+
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            costChart = new Chart(costCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Cost ($)',
+                        data: [],
+                        borderColor: '#e67e22',
+                        backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0,  // straight
+                        pointBackgroundColor: '#e67e22',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Cost ($)', font: { size: 14, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#2c3e50' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Time', font: { size: 14, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#2c3e50' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { font: { size: 14 }, color: '#2c3e50' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14 },
+                            callbacks: {
+                                label: ctx => `Cost: $${ctx.parsed.y.toFixed(4)}`
                             }
                         }
                     }
@@ -484,7 +603,26 @@
             });
         }
 
-        // Process data point to extract current + energy
+        function applyChartTheme(dark) {
+            const textColor = dark ? '#ecf0f1' : '#2c3e50';
+            const gridColor = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+            const tooltipBg = dark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.8)';
+
+            [timeChart, energyChart, costChart].forEach(chart => {
+                if (!chart) return;
+                chart.options.scales.x.ticks.color = textColor;
+                chart.options.scales.y.ticks.color = textColor;
+                chart.options.scales.x.grid.color = gridColor;
+                chart.options.scales.y.grid.color = gridColor;
+
+                if (chart.options.plugins.legend.labels) {
+                    chart.options.plugins.legend.labels.color = textColor;
+                }
+                chart.options.plugins.tooltip.backgroundColor = tooltipBg;
+                chart.update('none');
+            });
+        }
+
         function processDataPoint(data) {
             let current = 0;
             let energyKWh = 0;
@@ -497,19 +635,11 @@
                 timestamp = data.timestamp_ms || timestamp;
                 sequence = data.sequence || 0;
             }
-
-            return {
-                current: current,
-                energyKWh: energyKWh,
-                timestamp: timestamp,
-                sequence: sequence
-            };
+            return { current, energyKWh, timestamp, sequence };
         }
 
-        // Listen for real-time updates (sensor + relay + connection)
         function startRealtimeListener() {
             const sensorDataRef = database.ref('sensorData');
-            
             sensorDataRef.on('value', (snapshot) => {
                 const allData = snapshot.val();
                 if (allData) {
@@ -517,44 +647,38 @@
                 }
             });
 
-            // Relay reference
             relayRef = database.ref('relay/state');
-
-            // Listen to relay state changes
             relayRef.on('value', (snap) => {
                 const state = snap.val();
                 updateRelayUI(state);
             });
 
-            // Monitor connection status
             const connectedRef = database.ref('.info/connected');
             connectedRef.on('value', (snap) => {
                 const statusElement = document.getElementById('connectionStatus');
+                const textElement = document.getElementById('connectionText');
                 if (snap.val() === true) {
-                    statusElement.className = 'connection-status connected';
-                    statusElement.innerHTML = '<span class="status-indicator"></span><span>Live Connected</span>';
+                    statusElement.classList.remove('disconnected');
+                    statusElement.classList.add('connected');
+                    textElement.textContent = 'Live Connected';
                 } else {
-                    statusElement.className = 'connection-status disconnected';
-                    statusElement.innerHTML = '<span class="status-indicator"></span><span>Disconnected</span>';
+                    statusElement.classList.remove('connected');
+                    statusElement.classList.add('disconnected');
+                    textElement.textContent = 'Disconnected';
                 }
             });
         }
 
-        // Update relay UI from state
         function updateRelayUI(state) {
             const relayStatusEl = document.getElementById('relayStatus');
             const relayButton = document.getElementById('relayToggle');
             const relayTimeEl = document.getElementById('relayTime');
-
             if (!relayStatusEl || !relayButton || !relayTimeEl) return;
 
-            // Interpret state as boolean
             const isOn = (state === true || state === 'on' || state === 'ON' || state === 1);
-
             lastRelayState = isOn;
 
             relayStatusEl.textContent = isOn ? 'ON' : 'OFF';
-
             if (isOn) {
                 relayButton.textContent = 'Turn OFF';
                 relayButton.classList.remove('relay-off-btn');
@@ -564,18 +688,14 @@
                 relayButton.classList.remove('relay-on-btn');
                 relayButton.classList.add('relay-off-btn');
             }
-
             relayTimeEl.textContent = new Date().toLocaleTimeString();
         }
 
-        // Process all existing data and update charts
         function processAllData(allData) {
-            currentData = [];
             timeData = [];
             energyData = [];
-            
             const dataPoints = [];
-            
+
             Object.keys(allData).forEach(key => {
                 const dataPoint = allData[key];
                 const processed = processDataPoint(dataPoint);
@@ -583,114 +703,102 @@
                     dataPoints.push(processed);
                 }
             });
-            
-            // Sort by sequence number
-            dataPoints.sort((a, b) => a.sequence - b.sequence);
-            
-            dataPoints.forEach(point => {
-                currentData.push({
-                    value: point.current,
-                    sequence: point.sequence
-                });
-                
-                const timeLabel = formatTime(point.timestamp);
-                timeData.push({
-                    value: point.current,
-                    timestamp: point.timestamp,
-                    timeLabel: timeLabel
-                });
 
-                energyData.push({
-                    value: point.energyKWh,
-                    timestamp: point.timestamp,
-                    timeLabel: timeLabel
-                });
+            dataPoints.sort((a, b) => a.sequence - b.sequence);
+
+            dataPoints.forEach(point => {
+                const timeLabel = formatTime(point.timestamp);
+                timeData.push({ value: point.current, timestamp: point.timestamp, timeLabel });
+                energyData.push({ value: point.energyKWh, timestamp: point.timestamp, timeLabel });
             });
-            
+
             updateCharts();
-            
             if (dataPoints.length > 0) {
                 updateStats(dataPoints[dataPoints.length - 1]);
             }
-            
             updateInfoDisplays();
         }
 
-        // Format timestamp for display
         function formatTime(timestamp) {
             const date = new Date(timestamp);
             return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
         }
 
-        // Update the charts with all data points
         function updateCharts() {
-            // Current vs sequence
-            const sequenceLabels = currentData.map(point => `Point ${point.sequence}`);
-            const currentValues = currentData.map(point => point.value);
-            
-            currentChart.data.labels = sequenceLabels;
-            currentChart.data.datasets[0].data = currentValues;
-            currentChart.update();
-            
-            // Current vs time
-            const timeLabels = timeData.map(point => point.timeLabel);
-            const timeValues = timeData.map(point => point.value);
-            
+            const timeLabels = timeData.map(p => p.timeLabel);
+            const timeValues = timeData.map(p => p.value);
             timeChart.data.labels = timeLabels;
             timeChart.data.datasets[0].data = timeValues;
             timeChart.update();
 
-            // Energy vs time
-            const energyLabels = energyData.map(point => point.timeLabel);
-            const energyValues = energyData.map(point => point.value);
-
+            const energyLabels = energyData.map(p => p.timeLabel);
+            const energyValues = energyData.map(p => p.value);
             energyChart.data.labels = energyLabels;
             energyChart.data.datasets[0].data = energyValues;
             energyChart.update();
+
+            const costValues = energyValues.map(v => v * costPerKWh);
+            costChart.data.labels = energyLabels;
+            costChart.data.datasets[0].data = costValues;
+            costChart.update();
         }
 
-        // Update statistics display
         function updateStats(data) {
             const current = data.current || 0;
             const energyKWh = data.energyKWh || 0;
             const sequence = data.sequence || 0;
-            
+
             document.getElementById('currentCurrent').textContent = current.toFixed(3) + ' A';
             document.getElementById('energyKWh').textContent = energyKWh.toFixed(4) + ' kWh';
             document.getElementById('sequenceNumber').textContent = sequence;
-            
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            
+
+            const timeString = new Date().toLocaleTimeString();
             document.getElementById('currentTime').textContent = timeString;
             document.getElementById('energyTime').textContent = timeString;
             document.getElementById('sequenceTime').textContent = timeString;
         }
 
-        // Update info displays
         function updateInfoDisplays() {
-            document.getElementById('currentInfo').textContent = 
-                `Displaying ${currentData.length} current data points`;
-            document.getElementById('timeInfo').textContent = 
+            document.getElementById('timeInfo').textContent =
                 `Displaying ${timeData.length} time data points`;
-            document.getElementById('energyInfo').textContent = 
+            document.getElementById('energyInfo').textContent =
                 `Displaying ${energyData.length} energy data points`;
+            document.getElementById('costInfo').textContent =
+                `Displaying ${energyData.length} cost data points`;
         }
 
-        // Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', function() {
             initializeCharts();
+            applyChartTheme(false);
             startRealtimeListener();
 
-            // Button click to toggle relay
             const relayButton = document.getElementById('relayToggle');
             if (relayButton) {
                 relayButton.addEventListener('click', function() {
-                    // Default to OFF if we don't know current state
                     const newState = !(lastRelayState === true);
                     if (relayRef) {
                         relayRef.set(newState);
                     }
+                });
+            }
+
+            const costInput = document.getElementById('costPerKWhInput');
+            if (costInput) {
+                costInput.addEventListener('input', function() {
+                    const val = parseFloat(costInput.value);
+                    if (!isNaN(val) && val >= 0) {
+                        costPerKWh = val;
+                        updateCharts();
+                    }
+                });
+            }
+
+            const themeToggleSwitch = document.getElementById('themeToggleSwitch');
+            if (themeToggleSwitch) {
+                themeToggleSwitch.addEventListener('change', function() {
+                    isDarkMode = themeToggleSwitch.checked;
+                    document.body.classList.toggle('dark-mode', isDarkMode);
+                    applyChartTheme(isDarkMode);
                 });
             }
         });
